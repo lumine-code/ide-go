@@ -25,8 +25,8 @@ class LiveLspClient {
     this.stderr = "";
   }
 
-  async start() {
-    const launch = await this.adapter.resolveServer({ rootPath: this.rootPath });
+  async start(managedServer) {
+    const launch = await this.adapter.resolveServer({ rootPath: this.rootPath, managedServer });
     this.child = childProcess.spawn(launch.command, launch.args || [], {
       cwd: launch.cwd || this.rootPath,
       env: { ...process.env, ...(launch.env || {}) },

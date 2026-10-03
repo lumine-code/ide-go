@@ -18,10 +18,15 @@ const until = async (check, label) => {
 
 liveSuite("ide-go real editor routing", () => {
   let rootPath, editor, previousPaths, previousTimeout, service;
-  beforeEach(async () => {
-    jasmine.useRealClock();
+  beforeAll(() => {
     previousTimeout = jasmine.DEFAULT_TIMEOUT_INTERVAL;
     jasmine.DEFAULT_TIMEOUT_INTERVAL = 120000;
+  });
+  afterAll(() => {
+    jasmine.DEFAULT_TIMEOUT_INTERVAL = previousTimeout;
+  });
+  beforeEach(async () => {
+    jasmine.useRealClock();
     previousPaths = lumine.project.getPaths();
     rootPath = fs.mkdtempSync(path.join(fs.realpathSync.native(os.tmpdir()), "ide-go-sessions-"));
     lumine.config.set("ide-go.serverPath", serverPath);
@@ -40,7 +45,6 @@ liveSuite("ide-go real editor routing", () => {
     lumine.project.setPaths(previousPaths);
     await lumine.fileWatchClient.settlePendingTeardown();
     fs.rmSync(rootPath, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
-    jasmine.DEFAULT_TIMEOUT_INTERVAL = previousTimeout;
   });
 
   it("routes real completion and formatting, honours feature switches and stops on unload", async () => {

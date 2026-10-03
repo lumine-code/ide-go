@@ -208,10 +208,9 @@ describe("ide-go adapter lifecycle and settings", () => {
     });
     try {
       expect(await registered.resolveServer({ rootPath: os.tmpdir() })).toBeNull();
-      expect(missing).toHaveBeenCalledWith(
-        "ide-go",
-        jasmine.objectContaining({ description: jasmine.any(String) }),
-      );
+      const args = missing.calls.mostRecent().args;
+      expect(args[0]).toBe("ide-go");
+      expect(typeof args[1].description).toBe("string");
     } finally {
       edge.dispose();
     }

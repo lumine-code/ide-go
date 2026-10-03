@@ -13,10 +13,15 @@ const liveSuite = serverPath ? describe : () => {};
 
 liveSuite("ide-go real gopls protocol", () => {
   let rootPath, client, edge, timeout;
-  beforeEach(async () => {
-    jasmine.useRealClock();
+  beforeAll(() => {
     timeout = jasmine.DEFAULT_TIMEOUT_INTERVAL;
     jasmine.DEFAULT_TIMEOUT_INTERVAL = 120000;
+  });
+  afterAll(() => {
+    jasmine.DEFAULT_TIMEOUT_INTERVAL = timeout;
+  });
+  beforeEach(async () => {
+    jasmine.useRealClock();
     rootPath = fs.mkdtempSync(path.join(fs.realpathSync.native(os.tmpdir()), "ide-go-live-"));
     const main = (await lumine.packages.activatePackage("ide-go")).mainModule;
     lumine.config.set("ide-go.serverPath", serverPath);
@@ -36,7 +41,6 @@ liveSuite("ide-go real gopls protocol", () => {
     lumine.config.unset("ide-go.goPath");
     await lumine.packages.deactivatePackage("ide-go");
     fs.rmSync(rootPath, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
-    jasmine.DEFAULT_TIMEOUT_INTERVAL = timeout;
   });
 
   it("serves real diagnostics, intelligence, edits, hints, tokens and advertised hierarchies", async () => {
@@ -51,6 +55,7 @@ liveSuite("ide-go real gopls protocol", () => {
   });
 
   it("builds and launches a managed copy with the configured Go SDK", async () => {
+    const fixture = createProject(rootPath);
     const goPath = process.env.GO_PATH || findOnPath("go");
     expect(goPath).toBeTruthy();
     const currentServer = require("../lib/server");
@@ -69,5 +74,18 @@ liveSuite("ide-go real gopls protocol", () => {
     });
     expect(launch.command).toBe(path.join(storagePath, installed.binary));
     expect(installed.version).toBe(process.env.GOPLS_VERSION || "0.23.0");
+    lumine.config.set("ide-go.serverPath", "");
+    const { serverInfo } = await client.start({
+      binaryPath: launch.command,
+      version: installed.version,
+    });
+    expect(serverInfo.name).toBe("gopls");
+    expect(serverInfo.version).toContain(installed.version);
+    client.open(fixture.uri, "go", fixture.text);
+    const edits = await client.request("textDocument/formatting", {
+      textDocument: { uri: fixture.uri },
+      options: { tabSize: 4, insertSpaces: false },
+    });
+    expect(edits.length).toBeGreaterThan(0);
   });
 });
