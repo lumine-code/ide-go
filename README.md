@@ -1,4 +1,4 @@
-# ide-go
+# ide-gopls
 
 Provide Go code intelligence through gopls.
 
@@ -17,7 +17,7 @@ Registers the official [gopls](https://go.dev/gopls/) language server with `ide-
 
 ## Installation
 
-To install `ide-go` search for it in the Install pane of the Lumine settings, or run the command `lumine --install lumine-code/ide-go`.
+To install `ide-gopls` search for it in the Install pane of the Lumine settings, or run the command `lumine --install lumine-code/ide-gopls`.
 
 Install `ide-client` and `language-go`, then install the [Go SDK](https://go.dev/dl/). The SDK must remain available while gopls runs because the server calls `go list` to load your project. Go Path can select a SDK outside PATH; it must point to that SDK's `go` or `go.exe` executable.
 

@@ -1,13 +1,12 @@
 {
-  "name": "ide-go",
+  "name": "ide-gopls",
   "author": "lumine-code",
   "description": "Provide Go code intelligence through gopls.",
-  "repository": "https://github.com/lumine-code/ide-go",
+  "repository": "https://github.com/lumine-code/ide-gopls",
   "bugs": {
-    "url": "https://github.com/lumine-code/ide-go/issues"
+    "url": "https://github.com/lumine-code/ide-gopls/issues"
   },
   "keywords": [
-    "gopls",
     "golang",
     "language-server",
     "lsp",

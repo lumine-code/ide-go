@@ -11,7 +11,7 @@ if (process.env.REQUIRE_GOPLS && !serverPath)
   throw new Error("CI requires a real gopls executable.");
 const liveSuite = serverPath ? describe : () => {};
 
-liveSuite("ide-go real gopls protocol", () => {
+liveSuite("ide-gopls real gopls protocol", () => {
   let rootPath, client, edge, timeout;
   beforeAll(() => {
     timeout = jasmine.DEFAULT_TIMEOUT_INTERVAL;
@@ -22,10 +22,10 @@ liveSuite("ide-go real gopls protocol", () => {
   });
   beforeEach(async () => {
     jasmine.useRealClock();
-    rootPath = fs.mkdtempSync(path.join(fs.realpathSync.native(os.tmpdir()), "ide-go-live-"));
-    const main = (await lumine.packages.activatePackage("ide-go")).mainModule;
-    lumine.config.set("ide-go.serverPath", serverPath);
-    if (process.env.GO_PATH) lumine.config.set("ide-go.goPath", process.env.GO_PATH);
+    rootPath = fs.mkdtempSync(path.join(fs.realpathSync.native(os.tmpdir()), "ide-gopls-live-"));
+    const main = (await lumine.packages.activatePackage("ide-gopls")).mainModule;
+    lumine.config.set("ide-gopls.serverPath", serverPath);
+    if (process.env.GO_PATH) lumine.config.set("ide-gopls.goPath", process.env.GO_PATH);
     edge = main.consumeIdeClient({
       registerAdapter(adapter) {
         client = new LiveLspClient(adapter, rootPath);
@@ -37,9 +37,9 @@ liveSuite("ide-go real gopls protocol", () => {
   afterEach(async () => {
     await client.stop();
     edge.dispose();
-    lumine.config.unset("ide-go.serverPath");
-    lumine.config.unset("ide-go.goPath");
-    await lumine.packages.deactivatePackage("ide-go");
+    lumine.config.unset("ide-gopls.serverPath");
+    lumine.config.unset("ide-gopls.goPath");
+    await lumine.packages.deactivatePackage("ide-gopls");
     fs.rmSync(rootPath, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   });
 
@@ -74,7 +74,7 @@ liveSuite("ide-go real gopls protocol", () => {
     });
     expect(launch.command).toBe(path.join(storagePath, installed.binary));
     expect(installed.version).toBe(process.env.GOPLS_VERSION || "0.23.0");
-    lumine.config.set("ide-go.serverPath", "");
+    lumine.config.set("ide-gopls.serverPath", "");
     const { serverInfo } = await client.start({
       binaryPath: launch.command,
       version: installed.version,

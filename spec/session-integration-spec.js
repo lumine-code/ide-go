@@ -16,7 +16,7 @@ const until = async (check, label) => {
   throw new Error(`${label} timed out`);
 };
 
-liveSuite("ide-go real editor routing", () => {
+liveSuite("ide-gopls real editor routing", () => {
   let rootPath, editor, previousPaths, previousTimeout, service;
   beforeAll(() => {
     previousTimeout = jasmine.DEFAULT_TIMEOUT_INTERVAL;
@@ -28,20 +28,22 @@ liveSuite("ide-go real editor routing", () => {
   beforeEach(async () => {
     jasmine.useRealClock();
     previousPaths = lumine.project.getPaths();
-    rootPath = fs.mkdtempSync(path.join(fs.realpathSync.native(os.tmpdir()), "ide-go-sessions-"));
-    lumine.config.set("ide-go.serverPath", serverPath);
-    if (process.env.GO_PATH) lumine.config.set("ide-go.goPath", process.env.GO_PATH);
-    for (const name of ["language-go", "ide-client", "ide-go"])
+    rootPath = fs.mkdtempSync(
+      path.join(fs.realpathSync.native(os.tmpdir()), "ide-gopls-sessions-"),
+    );
+    lumine.config.set("ide-gopls.serverPath", serverPath);
+    if (process.env.GO_PATH) lumine.config.set("ide-gopls.goPath", process.env.GO_PATH);
+    for (const name of ["language-go", "ide-client", "ide-gopls"])
       await lumine.packages.activatePackage(name);
     service = lumine.packages.getActivePackage("ide-client").mainModule.provideIdeClient();
   });
   afterEach(async () => {
     editor?.destroy();
-    await lumine.packages.deactivatePackage("ide-go");
+    await lumine.packages.deactivatePackage("ide-gopls");
     await lumine.packages.deactivatePackage("ide-client");
     await lumine.packages.deactivatePackage("language-go");
     for (const key of ["serverPath", "goPath", "features.format"])
-      lumine.config.unset(`ide-go.${key}`);
+      lumine.config.unset(`ide-gopls.${key}`);
     lumine.project.setPaths(previousPaths);
     await lumine.fileWatchClient.settlePendingTeardown();
     fs.rmSync(rootPath, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
@@ -55,7 +57,7 @@ liveSuite("ide-go real editor routing", () => {
     const session = await until(
       async () =>
         (await service.activeSessionsForEditor(editor)).find(
-          ({ adapter }) => adapter.id === "ide-go",
+          ({ adapter }) => adapter.id === "ide-gopls",
         ),
       "Go session",
     );
@@ -78,12 +80,12 @@ liveSuite("ide-go real editor routing", () => {
     const edits = await provider.formatEntireFile(editor);
     expect(edits.length).toBeGreaterThan(0);
     expect(edits.every((edit) => edit.oldRange && typeof edit.newText === "string")).toBe(true);
-    lumine.config.set("ide-go.features.format", false);
+    lumine.config.set("ide-gopls.features.format", false);
     expect(await service.activeSessionForFeature(editor, "textDocument/formatting")).toBeNull();
     expect(await provider.formatEntireFile(editor)).toEqual([]);
-    lumine.config.set("ide-go.features.format", true);
+    lumine.config.set("ide-gopls.features.format", true);
     expect(await service.activeSessionForFeature(editor, "textDocument/formatting")).toBe(session);
-    await lumine.packages.deactivatePackage("ide-go");
+    await lumine.packages.deactivatePackage("ide-gopls");
     await until(() => session.state === "stopped", "Go package teardown");
     expect(service.adaptersForEditor(editor)).toEqual([]);
   });

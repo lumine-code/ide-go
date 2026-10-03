@@ -4,10 +4,10 @@ const path = require("node:path");
 const childProcess = require("node:child_process");
 const server = require("../lib/server");
 
-describe("ide-go server discovery and installation", () => {
+describe("ide-gopls server discovery and installation", () => {
   let directory;
   beforeEach(() => {
-    directory = fs.mkdtempSync(path.join(os.tmpdir(), "ide-go-resolution-"));
+    directory = fs.mkdtempSync(path.join(os.tmpdir(), "ide-gopls-resolution-"));
   });
   afterEach(() => {
     fs.rmSync(directory, { recursive: true, force: true });
@@ -124,10 +124,10 @@ describe("ide-go server discovery and installation", () => {
   });
 });
 
-describe("ide-go adapter lifecycle and settings", () => {
+describe("ide-gopls adapter lifecycle and settings", () => {
   let main, adapter, registration, disposed;
   beforeEach(async () => {
-    main = (await lumine.packages.activatePackage("ide-go")).mainModule;
+    main = (await lumine.packages.activatePackage("ide-gopls")).mainModule;
     disposed = jasmine.createSpy("disposeAdapter");
     registration = main.consumeIdeClient({
       registerAdapter(value) {
@@ -149,14 +149,14 @@ describe("ide-go adapter lifecycle and settings", () => {
       "gofumpt",
       "features.semanticTokens",
     ])
-      lumine.config.unset(`ide-go.${key}`);
-    await lumine.packages.deactivatePackage("ide-go");
+      lumine.config.unset(`ide-gopls.${key}`);
+    await lumine.packages.deactivatePackage("ide-gopls");
   });
 
   it("registers only Go with the hub and returns its exact edge disposable", () => {
-    expect(adapter.id).toBe("ide-go");
+    expect(adapter.id).toBe("ide-gopls");
     expect(adapter.grammarScopes).toEqual(["source.go"]);
-    expect(adapter.restartKeyPaths).toEqual(["ide-go.serverPath", "ide-go.goPath"]);
+    expect(adapter.restartKeyPaths).toEqual(["ide-gopls.serverPath", "ide-gopls.goPath"]);
     registration.dispose();
     expect(disposed).toHaveBeenCalled();
   });
@@ -172,17 +172,17 @@ describe("ide-go adapter lifecycle and settings", () => {
     expect(another).not.toHaveBeenCalled();
     edge.dispose();
     expect(another).toHaveBeenCalled();
-    await lumine.packages.deactivatePackage("ide-go");
-    const current = (await lumine.packages.activatePackage("ide-go")).mainModule;
-    expect(current.provideBackgroundTips().packageName).toBe("ide-go");
+    await lumine.packages.deactivatePackage("ide-gopls");
+    const current = (await lumine.packages.activatePackage("ide-gopls")).mainModule;
+    expect(current.provideBackgroundTips().packageName).toBe("ide-gopls");
     main = current;
   });
 
   it("answers gopls configuration unwrapped and uses the same initialization snapshot", () => {
-    lumine.config.set("ide-go.buildFlags", ["-tags=integration"]);
-    lumine.config.set("ide-go.env", { GOOS: "linux", CGO_ENABLED: "0" });
-    lumine.config.set("ide-go.local", "example.org/project");
-    lumine.config.set("ide-go.gofumpt", true);
+    lumine.config.set("ide-gopls.buildFlags", ["-tags=integration"]);
+    lumine.config.set("ide-gopls.env", { GOOS: "linux", CGO_ENABLED: "0" });
+    lumine.config.set("ide-gopls.local", "example.org/project");
+    lumine.config.set("ide-gopls.gofumpt", true);
     const settings = adapter.getWorkspaceConfiguration("gopls");
     expect(settings.buildFlags).toEqual(["-tags=integration"]);
     expect(settings.env).toEqual({ GOOS: "linux", CGO_ENABLED: "0" });
@@ -197,14 +197,14 @@ describe("ide-go adapter lifecycle and settings", () => {
   it("preserves upstream analyzer defaults and explicitly enables or disables Staticcheck", () => {
     expect(adapter.getSettings().gopls.staticcheck).toBeUndefined();
     expect(adapter.getSettings().gopls.local).toBeUndefined();
-    lumine.config.set("ide-go.staticcheck", "all");
+    lumine.config.set("ide-gopls.staticcheck", "all");
     expect(adapter.getSettings().gopls.staticcheck).toBe(true);
-    lumine.config.set("ide-go.staticcheck", "off");
+    lumine.config.set("ide-gopls.staticcheck", "off");
     expect(adapter.getSettings().gopls.staticcheck).toBe(false);
   });
 
   it("keeps server semantic tokens available for scoped overrides", () => {
-    lumine.config.set("ide-go.features.semanticTokens", false);
+    lumine.config.set("ide-gopls.features.semanticTokens", false);
     expect(adapter.getInitializationOptions().semanticTokens).toBe(true);
   });
 
@@ -223,7 +223,7 @@ describe("ide-go adapter lifecycle and settings", () => {
     try {
       expect(await registered.resolveServer({ rootPath: os.tmpdir() })).toBeNull();
       const args = missing.calls.mostRecent().args;
-      expect(args[0]).toBe("ide-go");
+      expect(args[0]).toBe("ide-gopls");
       expect(typeof args[1].description).toBe("string");
     } finally {
       edge.dispose();
