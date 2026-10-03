@@ -49,6 +49,18 @@ describe("ide-go server discovery and installation", () => {
     expect(process.env.PATH).toBe(before);
   });
 
+  it("rejects a renamed SDK command that gopls could not select through PATH", () => {
+    expect(() => server.goEnvironment(path.join(directory, "go1.27.1"))).toThrowError(/same SDK/);
+    expect(() => server.goEnvironment(path.join(directory, "go.exe"))).not.toThrow();
+  });
+
+  it("does not select Windows shell wrappers for a native server", () => {
+    fs.writeFileSync(path.join(directory, "gopls.cmd"), "@echo off\n");
+    expect(
+      server.findOnPath("gopls", { PATH: directory, PATHEXT: ".CMD;.BAT" }, "win32"),
+    ).toBeNull();
+  });
+
   it("resolves stable tagged versions and rejects prereleases and executable text", () => {
     expect(server.versionTag("v0.23.0")).toBe("v0.23.0");
     expect(server.versionTag("0.23.0")).toBe("v0.23.0");
@@ -84,10 +96,12 @@ describe("ide-go server discovery and installation", () => {
     const api = { setServerInstallationStatus: jasmine.createSpy("installationStatus") };
     const result = await server.installServer(
       { storagePath: directory, version: "0.23.0", api },
-      process.execPath,
+      path.join(directory, process.platform === "win32" ? "go.exe" : "go"),
     );
     expect(result.version).toBe("0.23.0");
-    expect(invocation.command).toBe(process.execPath);
+    expect(invocation.command).toBe(
+      path.join(directory, process.platform === "win32" ? "go.exe" : "go"),
+    );
     expect(invocation.args).toEqual(["install", "golang.org/x/tools/gopls@v0.23.0"]);
     expect(invocation.options.cwd).toBe(directory);
     expect(invocation.options.env.GOBIN).toBe(directory);
@@ -104,7 +118,7 @@ describe("ide-go server discovery and installation", () => {
     await expectAsync(
       server.installServer(
         { storagePath: directory, version: "0.23.0", api: { setServerInstallationStatus() {} } },
-        process.execPath,
+        path.join(directory, process.platform === "win32" ? "go.exe" : "go"),
       ),
     ).toBeRejectedWithError(/Go SDK too old/);
   });

@@ -61,7 +61,7 @@
     },
     "goPath": {
       "title": "Go Path",
-      "description": "Absolute path to the Go SDK executable. Leave empty to use go on PATH. Used to build gopls and to load projects while the server runs.",
+      "description": "Absolute path to the SDK's go or go.exe executable. Leave empty to use go on PATH. The same SDK builds gopls and loads projects while the server runs.",
       "type": "string",
       "default": ""
     },
