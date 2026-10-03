@@ -40,6 +40,7 @@ jobs:
     timeout-minutes: 60
     env:
       LUMINE_JASMINE_REPORTER: list
+      LUMINE_TEST_PACKAGES: ide-client language-go
       GOPLS_VERSION: 0.23.0
       REQUIRE_GOPLS: 1
     steps:
@@ -95,10 +96,11 @@ jobs:
           npm run build
       - name: Link editor service packages
         run: |
-          mkdir -p "$HOME/.lumine/packages-dev"
-          ln -s "$GITHUB_WORKSPACE/ide-client" "$HOME/.lumine/packages-dev/ide-client"
-          ln -s "$GITHUB_WORKSPACE/language-go" "$HOME/.lumine/packages-dev/language-go"
-      - name: Run Jasmine 6 against the real editor and server
+          echo "LUMINE_HOME=$GITHUB_WORKSPACE/.test-home" >> "$GITHUB_ENV"
+          mkdir -p "$GITHUB_WORKSPACE/.test-home/packages"
+          ln -s "$GITHUB_WORKSPACE/ide-client" "$GITHUB_WORKSPACE/.test-home/packages/ide-client"
+          ln -s "$GITHUB_WORKSPACE/language-go" "$GITHUB_WORKSPACE/.test-home/packages/language-go"
+      - name: Run Jasmine specs against the real editor and server
         working-directory: lumine
         timeout-minutes: 20
         run: xvfb-run --auto-servernum npm start -- --dev --test ../ide-go/spec
