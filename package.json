@@ -1,0 +1,307 @@
+{
+  "name": "ide-go",
+  "author": "lumine-code",
+  "description": "Provide Go code intelligence through gopls.",
+  "repository": "https://github.com/lumine-code/ide-go",
+  "bugs": {
+    "url": "https://github.com/lumine-code/ide-go/issues"
+  },
+  "keywords": [
+    "gopls",
+    "golang",
+    "language-server",
+    "lsp",
+    "refactoring"
+  ],
+  "version": "1.0.0",
+  "license": "MIT",
+  "engines": {
+    "lumine": "^1.0.0"
+  },
+  "main": "./lib/main",
+  "files": [
+    "lib",
+    "spec"
+  ],
+  "scripts": {
+    "test": "lumine --test spec",
+    "lint": "eslint . --max-warnings 0",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "consumedServices": {
+    "ide-client": {
+      "versions": {
+        "^1.0.0": "consumeIdeClient"
+      }
+    }
+  },
+  "providedServices": {
+    "background-tips.provider": {
+      "versions": {
+        "1.0.0": "provideBackgroundTips"
+      }
+    }
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.12.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-n": "^18.4.0",
+    "globals": "^17.13.0",
+    "prettier": "^3.9.9",
+    "vscode-jsonrpc": "^9.0.3"
+  },
+  "configSchema": {
+    "serverPath": {
+      "title": "Server Path",
+      "description": "Absolute path to gopls. Leave empty to use an editor-managed copy, then gopls on PATH.",
+      "type": "string",
+      "default": ""
+    },
+    "goPath": {
+      "title": "Go Path",
+      "description": "Absolute path to the Go SDK executable. Leave empty to use go on PATH. Used to build gopls and to load projects while the server runs.",
+      "type": "string",
+      "default": ""
+    },
+    "notifyWhenMissing": {
+      "title": "Notify When Missing",
+      "description": "Show a notification when gopls is missing, with an option to install it.",
+      "type": "boolean",
+      "default": true
+    },
+    "features": {
+      "title": "Features",
+      "description": "Which gopls results the editor uses. These switches can be overridden per grammar without disabling server capabilities.",
+      "type": "object",
+      "scopeResolution": "grammar",
+      "properties": {
+        "diagnostics": {
+          "title": "Diagnostics",
+          "description": "Report syntax errors, type errors and analysis findings.",
+          "type": "boolean",
+          "scopeResolution": "grammar",
+          "default": true
+        },
+        "autocomplete": {
+          "title": "Autocomplete",
+          "description": "Complete names, imports and members while typing.",
+          "type": "boolean",
+          "scopeResolution": "grammar",
+          "default": true
+        },
+        "hover": {
+          "title": "Hover",
+          "description": "Show type information and documentation on hover.",
+          "type": "boolean",
+          "scopeResolution": "grammar",
+          "default": true
+        },
+        "signature": {
+          "title": "Signature Help",
+          "description": "Show call parameters while entering an argument list.",
+          "type": "boolean",
+          "scopeResolution": "grammar",
+          "default": true
+        },
+        "definition": {
+          "title": "Go To Definition",
+          "description": "Navigate to declarations, types and implementations.",
+          "type": "boolean",
+          "scopeResolution": "grammar",
+          "default": true
+        },
+        "references": {
+          "title": "Find References",
+          "description": "Find the uses of a symbol across the workspace.",
+          "type": "boolean",
+          "scopeResolution": "grammar",
+          "default": true
+        },
+        "callHierarchy": {
+          "title": "Call Hierarchy",
+          "description": "Show incoming and outgoing function calls.",
+          "type": "boolean",
+          "scopeResolution": "grammar",
+          "default": true
+        },
+        "typeHierarchy": {
+          "title": "Type Hierarchy",
+          "description": "Show related interface and concrete types.",
+          "type": "boolean",
+          "scopeResolution": "grammar",
+          "default": true
+        },
+        "symbols": {
+          "title": "Symbols",
+          "description": "Serve document outlines and project symbol searches.",
+          "type": "boolean",
+          "scopeResolution": "grammar",
+          "default": true
+        },
+        "format": {
+          "title": "Format",
+          "description": "Format Go documents using the configured style.",
+          "type": "boolean",
+          "scopeResolution": "grammar",
+          "default": true
+        },
+        "rename": {
+          "title": "Rename",
+          "description": "Rename a symbol and its references across the project.",
+          "type": "boolean",
+          "scopeResolution": "grammar",
+          "default": true
+        },
+        "codeActions": {
+          "title": "Code Actions",
+          "description": "Offer fixes, refactorings and import organization.",
+          "type": "boolean",
+          "scopeResolution": "grammar",
+          "default": true
+        },
+        "inlayHints": {
+          "title": "Inlay Hints",
+          "description": "Show the enabled type and parameter hints inline.",
+          "type": "boolean",
+          "scopeResolution": "grammar",
+          "default": true
+        },
+        "codeLens": {
+          "title": "Code Lens",
+          "description": "Show actions such as running tests or updating dependencies.",
+          "type": "boolean",
+          "scopeResolution": "grammar",
+          "default": true
+        },
+        "semanticTokens": {
+          "title": "Semantic Tokens",
+          "description": "Provide semantic highlighting of Go symbols.",
+          "type": "boolean",
+          "scopeResolution": "grammar",
+          "default": true
+        }
+      }
+    },
+    "env": {
+      "title": "Go Environment",
+      "description": "Environment variables added to Go commands run by gopls, such as GOOS, GOARCH or CGO_ENABLED.",
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      },
+      "default": {}
+    },
+    "buildFlags": {
+      "title": "Build Flags",
+      "description": "Flags passed to the Go build system when discovering packages, such as -tags=integration.",
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "directoryFilters": {
+      "title": "Directory Filters",
+      "description": "Include or exclude workspace directories with ordered + and - path prefixes; the last matching filter wins.",
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [
+        "-**/node_modules"
+      ]
+    },
+    "gofumpt": {
+      "title": "Gofumpt",
+      "description": "Use the stricter gofumpt style instead of standard gofmt formatting.",
+      "type": "boolean",
+      "default": false
+    },
+    "staticcheck": {
+      "title": "Staticcheck",
+      "description": "Use the subset of Staticcheck analyzers chosen by gopls, enable all of them, or turn them off. All analyzers can increase analysis time.",
+      "type": "string",
+      "enum": [
+        "default",
+        "all",
+        "off"
+      ],
+      "default": "default"
+    },
+    "local": {
+      "title": "Local Import Prefix",
+      "description": "Import path prefix grouped after third-party imports when organizing or adding imports. Leave empty to keep the default grouping.",
+      "type": "string",
+      "default": ""
+    },
+    "completeUnimported": {
+      "title": "Complete Unimported Packages",
+      "description": "Offer completions from packages that the file has not imported yet.",
+      "type": "boolean",
+      "default": true
+    },
+    "usePlaceholders": {
+      "title": "Completion Placeholders",
+      "description": "Insert parameter placeholders when completing a function call.",
+      "type": "boolean",
+      "default": true
+    },
+    "testCodeLens": {
+      "title": "Test Code Lenses",
+      "description": "Show run-test actions above Go test and benchmark functions.",
+      "type": "boolean",
+      "default": true
+    },
+    "hints": {
+      "title": "Inlay Hints",
+      "description": "The hints gopls supplies when the client and its inlay-hints frontend are enabled.",
+      "type": "object",
+      "properties": {
+        "assignVariableTypes": {
+          "title": "Assignment Types",
+          "description": "Show inferred types beside short variable declarations.",
+          "type": "boolean",
+          "default": true
+        },
+        "compositeLiteralFields": {
+          "title": "Literal Fields",
+          "description": "Show field names in positional composite literals.",
+          "type": "boolean",
+          "default": true
+        },
+        "compositeLiteralTypes": {
+          "title": "Literal Types",
+          "description": "Show implicit types in composite literals.",
+          "type": "boolean",
+          "default": true
+        },
+        "constantValues": {
+          "title": "Constant Values",
+          "description": "Show the evaluated values of constant expressions.",
+          "type": "boolean",
+          "default": true
+        },
+        "functionTypeParameters": {
+          "title": "Type Parameters",
+          "description": "Show inferred type arguments of generic functions.",
+          "type": "boolean",
+          "default": true
+        },
+        "parameterNames": {
+          "title": "Parameter Names",
+          "description": "Show parameter names beside call arguments.",
+          "type": "boolean",
+          "default": true
+        },
+        "rangeVariableTypes": {
+          "title": "Range Types",
+          "description": "Show inferred types of range variables.",
+          "type": "boolean",
+          "default": true
+        }
+      }
+    }
+  }
+}

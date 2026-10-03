@@ -1,0 +1,73 @@
+const fs = require("node:fs");
+const os = require("node:os");
+const path = require("node:path");
+const { findOnPath } = require("../lib/server");
+const { LiveLspClient } = require("./helpers/live-lsp-client");
+const { createProject } = require("./helpers/project");
+const { exerciseServer } = require("./helpers/exercise-server");
+
+const serverPath = process.env.GOPLS_PATH || findOnPath("gopls");
+if (process.env.REQUIRE_GOPLS && !serverPath)
+  throw new Error("CI requires a real gopls executable.");
+const liveSuite = serverPath ? describe : () => {};
+
+liveSuite("ide-go real gopls protocol", () => {
+  let rootPath, client, edge, timeout;
+  beforeEach(async () => {
+    jasmine.useRealClock();
+    timeout = jasmine.DEFAULT_TIMEOUT_INTERVAL;
+    jasmine.DEFAULT_TIMEOUT_INTERVAL = 120000;
+    rootPath = fs.mkdtempSync(path.join(fs.realpathSync.native(os.tmpdir()), "ide-go-live-"));
+    const main = (await lumine.packages.activatePackage("ide-go")).mainModule;
+    lumine.config.set("ide-go.serverPath", serverPath);
+    if (process.env.GO_PATH) lumine.config.set("ide-go.goPath", process.env.GO_PATH);
+    edge = main.consumeIdeClient({
+      registerAdapter(adapter) {
+        client = new LiveLspClient(adapter, rootPath);
+        return { dispose() {} };
+      },
+      reportMissingServer() {},
+    });
+  });
+  afterEach(async () => {
+    await client.stop();
+    edge.dispose();
+    lumine.config.unset("ide-go.serverPath");
+    lumine.config.unset("ide-go.goPath");
+    await lumine.packages.deactivatePackage("ide-go");
+    fs.rmSync(rootPath, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+    jasmine.DEFAULT_TIMEOUT_INTERVAL = timeout;
+  });
+
+  it("serves real diagnostics, intelligence, edits, hints, tokens and advertised hierarchies", async () => {
+    const fixture = createProject(rootPath);
+    const { capabilities, serverInfo } = await client.start();
+    expect(serverInfo.name).toBe("gopls");
+    if (process.env.GOPLS_VERSION) expect(serverInfo.version).toContain(process.env.GOPLS_VERSION);
+    const covered = await exerciseServer(client, fixture, capabilities);
+    expect(covered).toContain("formatting");
+    expect(covered).toContain("incoming calls");
+    expect(covered).toContain("type subtypes");
+  });
+
+  it("builds and launches a managed copy with the configured Go SDK", async () => {
+    const goPath = process.env.GO_PATH || findOnPath("go");
+    expect(goPath).toBeTruthy();
+    const currentServer = require("../lib/server");
+    const storagePath = path.join(rootPath, "managed");
+    const installed = await currentServer.installServer(
+      {
+        storagePath,
+        version: process.env.GOPLS_VERSION || "0.23.0",
+        api: { setServerInstallationStatus() {} },
+      },
+      goPath,
+    );
+    const launch = await currentServer.resolveServer("", {
+      binaryPath: path.join(storagePath, installed.binary),
+      version: installed.version,
+    });
+    expect(launch.command).toBe(path.join(storagePath, installed.binary));
+    expect(installed.version).toBe(process.env.GOPLS_VERSION || "0.23.0");
+  });
+});
