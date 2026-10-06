@@ -23,7 +23,8 @@
     "spec"
   ],
   "specPackages": [
-    "ide-client"
+    "ide-client",
+    "language-go"
   ],
   "scripts": {
     "test": "lumine --test spec",

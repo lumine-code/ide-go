@@ -40,7 +40,6 @@ jobs:
     timeout-minutes: 60
     env:
       LUMINE_JASMINE_REPORTER: list
-      LUMINE_TEST_PACKAGES: ide-client language-go
       GOPLS_VERSION: 0.23.0
       REQUIRE_GOPLS: 1
     steps:
@@ -51,14 +50,6 @@ jobs:
         with:
           repository: lumine-code/lumine
           path: lumine
-      - uses: actions/checkout@v7
-        with:
-          repository: lumine-code/ide-client
-          path: ide-client
-      - uses: actions/checkout@v7
-        with:
-          repository: lumine-code/language-go
-          path: language-go
       - uses: actions/setup-node@v7
         with:
           node-version-file: lumine/.nvmrc
@@ -81,9 +72,6 @@ jobs:
       - name: Install adapter dependencies
         working-directory: ide-gopls
         run: npm ci --ignore-scripts
-      - name: Install client dependencies
-        working-directory: ide-client
-        run: npm ci --ignore-scripts
       - name: Install declared spec packages
         run: node lumine/script/install-spec-packages.js --package ide-gopls --home "$RUNNER_TEMP/lumine-spec-home" --github-env "$GITHUB_ENV"
       - name: Install editor dependencies
@@ -96,12 +84,6 @@ jobs:
         run: |
           node node_modules/electron/install.js
           npm run build
-      - name: Link editor service packages
-        run: |
-          echo "LUMINE_HOME=$GITHUB_WORKSPACE/.test-home" >> "$GITHUB_ENV"
-          mkdir -p "$GITHUB_WORKSPACE/.test-home/packages"
-          ln -s "$GITHUB_WORKSPACE/ide-client" "$GITHUB_WORKSPACE/.test-home/packages/ide-client"
-          ln -s "$GITHUB_WORKSPACE/language-go" "$GITHUB_WORKSPACE/.test-home/packages/language-go"
       - name: Run Jasmine specs against the real editor and server
         working-directory: lumine
         timeout-minutes: 20
