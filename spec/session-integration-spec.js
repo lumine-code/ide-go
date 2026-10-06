@@ -82,7 +82,7 @@ liveSuite("ide-gopls real editor routing", () => {
     expect(edits.every((edit) => edit.oldRange && typeof edit.newText === "string")).toBe(true);
     lumine.config.set("ide-gopls.features.format", false);
     expect(await service.activeSessionForFeature(editor, "textDocument/formatting")).toBeNull();
-    expect(await provider.formatEntireFile(editor)).toEqual([]);
+    expect(await provider.formatEntireFile(editor)).toBeNull();
     lumine.config.set("ide-gopls.features.format", true);
     expect(await service.activeSessionForFeature(editor, "textDocument/formatting")).toBe(session);
     await lumine.packages.deactivatePackage("ide-gopls");
