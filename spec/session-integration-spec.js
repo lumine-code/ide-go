@@ -33,14 +33,14 @@ liveSuite("ide-gopls real editor routing", () => {
     );
     lumine.config.set("ide-gopls.serverPath", serverPath);
     if (process.env.GO_PATH) lumine.config.set("ide-gopls.goPath", process.env.GO_PATH);
-    for (const name of ["language-go", "ide-client", "ide-gopls"])
+    for (const name of ["language-go", "ide", "ide-gopls"])
       await lumine.packages.activatePackage(name);
-    service = lumine.packages.getActivePackage("ide-client").mainModule.provideIdeClient();
+    service = lumine.packages.getActivePackage("ide").mainModule.provideIde();
   });
   afterEach(async () => {
     editor?.destroy();
     await lumine.packages.deactivatePackage("ide-gopls");
-    await lumine.packages.deactivatePackage("ide-client");
+    await lumine.packages.deactivatePackage("ide");
     await lumine.packages.deactivatePackage("language-go");
     for (const key of ["serverPath", "goPath", "features.format"])
       lumine.config.unset(`ide-gopls.${key}`);
@@ -63,7 +63,7 @@ liveSuite("ide-gopls real editor routing", () => {
     );
     expect(session.state).toBe("running");
     expect(session.supports("textDocument/hover", editor)).toBe(true);
-    const clientMain = lumine.packages.getActivePackage("ide-client").mainModule;
+    const clientMain = lumine.packages.getActivePackage("ide").mainModule;
     const point = position(fixture.text, "Double(3)", 3);
     const suggestions = await clientMain.provideAutocomplete().getSuggestions({
       editor,

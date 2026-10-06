@@ -2,7 +2,7 @@
 
 Provide Go code intelligence through gopls.
 
-Registers the official [gopls](https://go.dev/gopls/) language server with `ide-client`. Install `language-go` for syntax highlighting and the editor service frontends for the features you want to display.
+Registers the official [gopls](https://go.dev/gopls/) language server with `ide`. Install `language-go` for syntax highlighting and the editor service frontends for the features you want to display.
 
 ## Features
 
@@ -19,9 +19,9 @@ Registers the official [gopls](https://go.dev/gopls/) language server with `ide-
 
 To install `ide-gopls` search for it in the Install pane of the Lumine settings, or run the command `lumine --install lumine-code/ide-gopls`.
 
-Install `ide-client` and `language-go`, then install the [Go SDK](https://go.dev/dl/). The SDK must remain available while gopls runs because the server calls `go list` to load your project. Go Path can select a SDK outside PATH; it must point to that SDK's `go` or `go.exe` executable.
+Install `ide` and `language-go`, then install the [Go SDK](https://go.dev/dl/). The SDK must remain available while gopls runs because the server calls `go list` to load your project. Go Path can select a SDK outside PATH; it must point to that SDK's `go` or `go.exe` executable.
 
-Use `ide-client:manage-servers` to install gopls, or run `go install golang.org/x/tools/gopls@latest` yourself. Managed installation requires the Go SDK and an Internet connection; updating and removing the managed server leave the SDK and separately installed servers intact.
+Use `ide:manage-servers` to install gopls, or run `go install golang.org/x/tools/gopls@latest` yourself. Managed installation requires the Go SDK and an Internet connection; updating and removing the managed server leave the SDK and separately installed servers intact.
 
 Managed installation respects the standard `GOPROXY` environment variable for a corporate module mirror and retains authentication through `sum.golang.org`.
 
@@ -31,7 +31,7 @@ Open the folder containing `go.mod` or `go.work` as a project, then open a Go fi
 
 ## Services
 
-- `ide-client`: consumed to register and configure the Go language server.
+- `ide`: consumed to register and configure the Go language server.
 - `background-tips.provider`: provided to background-tips to describe Go navigation and refactoring.
 
 ## Contributing

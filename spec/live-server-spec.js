@@ -27,7 +27,7 @@ liveSuite("ide-gopls real gopls protocol", () => {
     const main = (await lumine.packages.activatePackage("ide-gopls")).mainModule;
     lumine.config.set("ide-gopls.serverPath", serverPath);
     if (process.env.GO_PATH) lumine.config.set("ide-gopls.goPath", process.env.GO_PATH);
-    edge = main.consumeIdeClient({
+    edge = main.consumeIde({
       registerAdapter(adapter) {
         client = new LiveLspClient(adapter, rootPath);
         return { dispose() {} };

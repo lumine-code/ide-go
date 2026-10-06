@@ -145,7 +145,7 @@ describe("ide-gopls adapter lifecycle and settings", () => {
   beforeEach(async () => {
     main = (await lumine.packages.activatePackage("ide-gopls")).mainModule;
     disposed = jasmine.createSpy("disposeAdapter");
-    registration = main.consumeIdeClient({
+    registration = main.consumeIde({
       registerAdapter(value) {
         adapter = value;
         return { dispose: disposed };
@@ -179,7 +179,7 @@ describe("ide-gopls adapter lifecycle and settings", () => {
 
   it("keeps independent service edges and reacquires the current package generation", async () => {
     const another = jasmine.createSpy("anotherEdge");
-    const edge = main.consumeIdeClient({
+    const edge = main.consumeIde({
       registerAdapter() {
         return { dispose: another };
       },
@@ -238,7 +238,7 @@ describe("ide-gopls adapter lifecycle and settings", () => {
     spyOn(currentServer, "resolveServer").and.resolveTo(null);
     const missing = jasmine.createSpy("missing");
     let registered;
-    const edge = main.consumeIdeClient({
+    const edge = main.consumeIde({
       registerAdapter(value) {
         registered = value;
         return { dispose() {} };
