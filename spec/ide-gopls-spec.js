@@ -3,6 +3,7 @@ const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
 const childProcess = require("node:child_process");
+const { EventEmitter } = require("node:events");
 const server = require("../lib/server");
 
 describe("ide-gopls server discovery and installation", () => {
@@ -86,7 +87,9 @@ describe("ide-gopls server discovery and installation", () => {
       json: async () => ({ Version: "v0.23.0" }),
     });
     expect(await server.latestServerVersion()).toBe("0.23.0");
-    expect(fetch).toHaveBeenCalledWith("https://proxy.golang.org/golang.org/x/tools/gopls/@latest");
+    expect(fetch.calls.mostRecent().args[0]).toBe(
+      "https://proxy.golang.org/golang.org/x/tools/gopls/@latest",
+    );
   });
 
   it("reports proxy failures and rejects malformed release records", async () => {
@@ -103,7 +106,12 @@ describe("ide-gopls server discovery and installation", () => {
       const binary = path.join(directory, process.platform === "win32" ? "gopls.exe" : "gopls");
       fs.copyFileSync(process.execPath, binary);
       fs.chmodSync(binary, 0o755);
-      callback(null, "", "");
+      const child = new EventEmitter();
+      queueMicrotask(() => {
+        callback(null, "", "");
+        child.emit("close", 0);
+      });
+      return child;
     });
     const api = { setServerInstallationStatus: jasmine.createSpy("installationStatus") };
     const result = await server.installServer(
@@ -124,9 +132,14 @@ describe("ide-gopls server discovery and installation", () => {
   });
 
   it("preserves Go build failure details for the hub's install notification", async () => {
-    spyOn(childProcess, "execFile").and.callFake((_command, _args, _options, callback) =>
-      callback(new Error("failed"), "", "Go SDK too old"),
-    );
+    spyOn(childProcess, "execFile").and.callFake((_command, _args, _options, callback) => {
+      const child = new EventEmitter();
+      queueMicrotask(() => {
+        callback(new Error("failed"), "", "Go SDK too old");
+        child.emit("close", 1);
+      });
+      return child;
+    });
     await expectAsync(
       server.installServer(
         installContext({
