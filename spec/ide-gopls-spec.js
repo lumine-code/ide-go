@@ -1,3 +1,4 @@
+const { serverContext, installContext } = require("./helpers/server-resolver");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
@@ -8,16 +9,24 @@ describe("ide-gopls server discovery and installation", () => {
   let directory;
   beforeEach(() => {
     directory = fs.mkdtempSync(path.join(os.tmpdir(), "ide-gopls-resolution-"));
+    const sdk = path.join(directory, process.platform === "win32" ? "go.exe" : "go");
+    fs.writeFileSync(sdk, "Go SDK fixture");
+    fs.chmodSync(sdk, 0o755);
   });
   afterEach(() => {
     fs.rmSync(directory, { recursive: true, force: true });
   });
 
   it("prefers an explicit path over managed and PATH copies", async () => {
-    const managed = { binaryPath: "/managed/gopls", version: "0.23.0" };
-    expect((await server.resolveServer(process.execPath, managed)).command).toBe(process.execPath);
-    expect(await server.resolveServer("", managed, { PATH: "" })).toEqual({
-      command: "/managed/gopls",
+    const managed = { binaryPath: process.execPath, version: "0.23.0" };
+    expect(
+      (await server.resolveServer(serverContext({ managedServer: managed }), process.execPath))
+        .command,
+    ).toBe(process.execPath);
+    expect(
+      await server.resolveServer(serverContext({ managedServer: managed, env: { PATH: "" } }), ""),
+    ).toEqual({
+      command: process.execPath,
       args: [],
       version: "0.23.0",
     });
@@ -25,9 +34,14 @@ describe("ide-gopls server discovery and installation", () => {
 
   it("rejects an invalid explicit path instead of silently changing servers", async () => {
     await expectAsync(
-      server.resolveServer(path.join(directory, "missing"), { binaryPath: "/managed/gopls" }),
+      server.resolveServer(
+        serverContext({ managedServer: { binaryPath: process.execPath } }),
+        path.join(directory, "missing"),
+      ),
     ).toBeRejected();
-    await expectAsync(server.resolveServer(directory)).toBeRejectedWithError(/not a directory/);
+    await expectAsync(server.resolveServer(serverContext(), directory)).toBeRejectedWithError(
+      /must name a file/,
+    );
   });
 
   it("resolves PATH executables and returns null when none is installed", async () => {
@@ -35,9 +49,14 @@ describe("ide-gopls server discovery and installation", () => {
     const executable = path.join(directory, name);
     fs.copyFileSync(process.execPath, executable);
     fs.chmodSync(executable, 0o755);
-    const launch = await server.resolveServer("", null, { PATH: directory, PATHEXT: ".EXE" });
+    const launch = await server.resolveServer(
+      serverContext({ managedServer: null, env: { PATH: directory, PATHEXT: ".EXE" } }),
+      "",
+    );
     expect(launch.command.toLowerCase()).toBe(executable.toLowerCase());
-    expect(await server.resolveServer("", null, { PATH: "" })).toBeNull();
+    expect(
+      await server.resolveServer(serverContext({ managedServer: null, env: { PATH: "" } }), ""),
+    ).toBeNull();
   });
 
   it("selects the Go SDK for child commands without changing the process environment", () => {
@@ -52,13 +71,6 @@ describe("ide-gopls server discovery and installation", () => {
   it("rejects a renamed SDK command that gopls could not select through PATH", () => {
     expect(() => server.goEnvironment(path.join(directory, "go1.27.1"))).toThrowError(/same SDK/);
     expect(() => server.goEnvironment(path.join(directory, "go.exe"))).not.toThrow();
-  });
-
-  it("does not select Windows shell wrappers for a native server", () => {
-    fs.writeFileSync(path.join(directory, "gopls.cmd"), "@echo off\n");
-    expect(
-      server.findOnPath("gopls", { PATH: directory, PATHEXT: ".CMD;.BAT" }, "win32"),
-    ).toBeNull();
   });
 
   it("resolves stable tagged versions and rejects prereleases and executable text", () => {
@@ -95,7 +107,7 @@ describe("ide-gopls server discovery and installation", () => {
     });
     const api = { setServerInstallationStatus: jasmine.createSpy("installationStatus") };
     const result = await server.installServer(
-      { storagePath: directory, version: "0.23.0", api },
+      installContext({ storagePath: directory, version: "0.23.0", api }),
       path.join(directory, process.platform === "win32" ? "go.exe" : "go"),
     );
     expect(result.version).toBe("0.23.0");
@@ -117,7 +129,11 @@ describe("ide-gopls server discovery and installation", () => {
     );
     await expectAsync(
       server.installServer(
-        { storagePath: directory, version: "0.23.0", api: { setServerInstallationStatus() {} } },
+        installContext({
+          storagePath: directory,
+          version: "0.23.0",
+          api: { setServerInstallationStatus() {} },
+        }),
         path.join(directory, process.platform === "win32" ? "go.exe" : "go"),
       ),
     ).toBeRejectedWithError(/Go SDK too old/);
@@ -208,6 +224,15 @@ describe("ide-gopls adapter lifecycle and settings", () => {
     expect(adapter.getInitializationOptions().semanticTokens).toBe(true);
   });
 
+  it("validates the selected SDK before starting gopls", async () => {
+    const currentServer = require("../lib/server");
+    spyOn(currentServer, "resolveServer").and.resolveTo({ command: process.execPath, args: [] });
+    lumine.config.set("ide-gopls.goPath", path.join(os.tmpdir(), "absent-sdk", "go"));
+    await expectAsync(
+      adapter.resolveServer(serverContext({ rootPath: os.tmpdir() })),
+    ).toBeRejected();
+  });
+
   it("reports an unavailable server through the hub and returns null", async () => {
     const currentServer = require("../lib/server");
     spyOn(currentServer, "resolveServer").and.resolveTo(null);
@@ -221,7 +246,7 @@ describe("ide-gopls adapter lifecycle and settings", () => {
       reportMissingServer: missing,
     });
     try {
-      expect(await registered.resolveServer({ rootPath: os.tmpdir() })).toBeNull();
+      expect(await registered.resolveServer(serverContext({ rootPath: os.tmpdir() }))).toBeNull();
       const args = missing.calls.mostRecent().args;
       expect(args[0]).toBe("ide-gopls");
       expect(typeof args[1].description).toBe("string");

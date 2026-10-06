@@ -1,7 +1,8 @@
+const { serverContext, installContext } = require("./helpers/server-resolver");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
-const { findOnPath } = require("../lib/server");
+const { findOnPath } = require("./helpers/server-resolver");
 const { LiveLspClient } = require("./helpers/live-lsp-client");
 const { createProject } = require("./helpers/project");
 const { exerciseServer } = require("./helpers/exercise-server");
@@ -61,17 +62,22 @@ liveSuite("ide-gopls real gopls protocol", () => {
     const currentServer = require("../lib/server");
     const storagePath = path.join(rootPath, "managed");
     const installed = await currentServer.installServer(
-      {
+      installContext({
         storagePath,
         version: process.env.GOPLS_VERSION || "0.23.0",
         api: { setServerInstallationStatus() {} },
-      },
+      }),
       goPath,
     );
-    const launch = await currentServer.resolveServer("", {
-      binaryPath: path.join(storagePath, installed.binary),
-      version: installed.version,
-    });
+    const launch = await currentServer.resolveServer(
+      serverContext({
+        managedServer: {
+          binaryPath: path.join(storagePath, installed.binary),
+          version: installed.version,
+        },
+      }),
+      "",
+    );
     expect(launch.command).toBe(path.join(storagePath, installed.binary));
     expect(installed.version).toBe(process.env.GOPLS_VERSION || "0.23.0");
     lumine.config.set("ide-gopls.serverPath", "");

@@ -2,7 +2,7 @@ const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
 const { createProject, position } = require("./helpers/project");
-const { findOnPath } = require("../lib/server");
+const { findOnPath } = require("./helpers/server-resolver");
 
 const serverPath = process.env.GOPLS_PATH || findOnPath("gopls");
 const liveSuite = serverPath ? describe : () => {};
