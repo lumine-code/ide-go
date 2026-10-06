@@ -183,7 +183,7 @@ describe("ide-gopls adapter lifecycle and settings", () => {
     lumine.config.set("ide-gopls.env", { GOOS: "linux", CGO_ENABLED: "0" });
     lumine.config.set("ide-gopls.local", "example.org/project");
     lumine.config.set("ide-gopls.gofumpt", true);
-    const settings = adapter.getWorkspaceConfiguration("gopls");
+    const settings = adapter.getSettings().gopls;
     expect(settings.buildFlags).toEqual(["-tags=integration"]);
     expect(settings.env).toEqual({ GOOS: "linux", CGO_ENABLED: "0" });
     expect(settings.local).toBe("example.org/project");
@@ -191,7 +191,7 @@ describe("ide-gopls adapter lifecycle and settings", () => {
     expect(settings.gopls).toBeUndefined();
     expect(adapter.getSettings()).toEqual({ gopls: settings });
     expect(adapter.getInitializationOptions()).toEqual(settings);
-    expect(adapter.getWorkspaceConfiguration("unrelated")).toBeUndefined();
+    expect(adapter.getWorkspaceConfiguration).toBeUndefined();
   });
 
   it("preserves upstream analyzer defaults and explicitly enables or disables Staticcheck", () => {
