@@ -11,7 +11,7 @@ describe("Go installation lifetime", () => {
     jasmine.useRealClock();
     directory = fs.mkdtempSync(path.join(os.tmpdir(), "ide-go-lifetime-"));
     const sdk = path.join(directory, process.platform === "win32" ? "go.exe" : "go");
-    fs.copyFileSync(process.execPath, sdk);
+    fs.writeFileSync(sdk, "Go SDK fixture");
     fs.chmodSync(sdk, 0o755);
   });
   afterEach(() => fs.rmSync(directory, { recursive: true, force: true }));
@@ -143,14 +143,18 @@ describe("Go installation lifetime", () => {
     const node = require("./helpers/server-resolver").findOnPath("node");
     expect(node).not.toBeNull();
     const sdk = path.join(directory, process.platform === "win32" ? "go.exe" : "go");
-    fs.copyFileSync(node, sdk);
-    fs.chmodSync(sdk, 0o755);
     const marker = path.join(directory, "started.json");
     fs.writeFileSync(
       path.join(directory, "install"),
       "require('node:fs').writeFileSync('started.json', JSON.stringify({pid:process.pid})); setInterval(() => {}, 1000);",
     );
-    const spawn = spyOn(childProcess, "execFile").and.callThrough();
+    // Keep Node beside its shared libraries. Renaming a copied executable to
+    // go breaks dynamically linked Node builds on macOS. Only substitute the
+    // executable; the install arguments, options and real child stay intact.
+    const execFile = childProcess.execFile;
+    const spawn = spyOn(childProcess, "execFile").and.callFake(
+      (_command, args, options, callback) => execFile(node, args, options, callback),
+    );
     const controller = new AbortController();
     const reason = new DOMException("Installation canceled", "AbortError");
     const pending = server.installServer(
@@ -168,9 +172,13 @@ describe("Go installation lifetime", () => {
       while (!fs.existsSync(marker) && Date.now() < deadline)
         await new Promise((resolve) => setTimeout(resolve, 10));
       expect(fs.existsSync(marker)).toBe(true);
+      const child = spawn.calls.mostRecent().returnValue;
+      expect(spawn.calls.mostRecent().args[0]).toBe(sdk);
+      expect(JSON.parse(fs.readFileSync(marker, "utf8")).pid).toBe(child.pid);
+      expect(child.exitCode).toBeNull();
+      expect(child.signalCode).toBeNull();
       controller.abort(reason);
       expect(await outcome).toBe(reason);
-      const child = spawn.calls.mostRecent().returnValue;
       expect(child.exitCode !== null || child.signalCode !== null).toBe(true);
       // Successful immediate removal also checks that Windows no longer has
       // the build's working directory open when the worker rejects.
